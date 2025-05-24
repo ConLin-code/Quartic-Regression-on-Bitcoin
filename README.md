@@ -1,2 +1,2 @@
 # Quartic-Regression-on-Bitcoin
-Quartic regression on Bitcoin's price
+I made a quick Quartic regression model on Bitcoin's price for fun. Here is the code.
