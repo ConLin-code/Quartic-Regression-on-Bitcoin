@@ -1,0 +1,60 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import yfinance as yf
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import r2_score
+from datetime import datetime
+
+# Step 1: Fetch historical BTC-USD data
+start_date = '2023-01-01'
+end_date = '2025-05-24'
+btc_data = yf.download('BTC-USD', start=start_date, end=end_date)
+
+# Ensure the data is valid
+if btc_data.empty:
+    raise ValueError("No data fetched. Data range or Internet connection may be the problem here.")
+
+# Reset index to access 'Date' column
+btc_data.reset_index(inplace=True)
+
+# Step 2: Prepare the data
+btc_data['Days'] = (btc_data['Date'] - btc_data['Date'].min()).dt.days
+X = btc_data['Days'].values.reshape(-1, 1)
+y = btc_data['Close'].values
+
+# Step 3: Polynomial Regression
+degree = 4
+poly = PolynomialFeatures(degree=degree)
+X_poly = poly.fit_transform(X)
+
+model = LinearRegression()
+model.fit(X_poly, y)
+y_pred = model.predict(X_poly)
+
+# Step 4: Evaluate the model
+r2 = r2_score(y, y_pred)
+print(f"R² score: {r2:.4f}")
+
+# Step 5: Visualization
+plt.figure(figsize=(14, 7))
+plt.scatter(btc_data['Date'], y, color='deepskyblue', label='Actual BTC-USD Price', s=10)
+plt.plot(btc_data['Date'], y_pred, color='crimson', linewidth=2, label=f'Polynomial Regression (deg={degree})')
+
+plt.title('BTC-USD Polynomial Regression Model Fit', fontsize=16)
+plt.xlabel('Date')
+plt.ylabel('Price (USD)')
+plt.grid(True)
+plt.legend()
+
+# Step 6: Displaying the regression equation
+coefs = model.coef_
+intercept = model.intercept_
+eq_terms = [f"{float(intercept):.2f}"] + [f"{float(coefs[i]):+0.2f}×x^{i}" for i in range(1, len(coefs))]
+equation = "Price = " + " ".join(eq_terms)
+plt.text(btc_data['Date'].iloc[len(btc_data)//8], max(y)*0.95, equation, fontsize=9,
+         bbox=dict(facecolor='ivory', edgecolor='black'))
+
+plt.tight_layout()
+plt.show()
